@@ -5,7 +5,7 @@
 Sys.setenv(LANG = "en")
 pacman::p_load(rio, data.table, tidyverse, tidyr, purrr, magrittr, compare, 
                ggplot2, leaflet, sp, raster, rgdal, htmltools, htmlwidgets,
-               tmaptools,maptools, raster, sf, tmap, spatstat)
+               tmaptools, maptools, raster, sf, tmap, spatstat, rgeos)
 
 #import data#
 MaStR_Amprion_join_with_georeferences <- read.csv("MaStR_Amprion_join_with_georeferences.csv")
@@ -51,11 +51,12 @@ WGS84 <- CRS("+proj=longlat +datum=WGS84 +no_defs")
 crs(MaStR_Amprion_join_with_georeferences) <- WGS84
 crs(MaStR_Amprion_join_with_georeferences)
 
-###################
-#create shape file#
-###################
+
+#create shape file
 class(MaStR_Amprion_join_with_georeferences)
-writeOGR(MaStR_Amprion_join_with_georeferences, "C:/Users/Dell/Desktop/MasterThesis/Area_consumption_of_wind_turbines", "distance_calc", driver = "ESRI Shapefile")
+writeOGR(MaStR_Amprion_join_with_georeferences, 
+         "C:/Users/Dell/Desktop/MasterThesis/Area_consumption_of_wind_turbines", 
+         "distance_calc", driver = "ESRI Shapefile")
 
 
 ##############################
@@ -63,17 +64,7 @@ writeOGR(MaStR_Amprion_join_with_georeferences, "C:/Users/Dell/Desktop/MasterThe
 ##############################
 
 
-######################################
-#load data in the ppp and owin format#
-######################################
-library(sf)
-library(maptools)
-library(raster)
-library(spatstat)
-
-##################################
-#load points pattern in sf format#
-##################################
+#load points pattern in sf format
 wts_sf <- st_read("distance_calc.shp")
 crs(wts_sf)
 
@@ -86,9 +77,7 @@ wts_ppp  <- as.ppp(wts_flat)
 plot(wts_ppp)
 
 
-########################
-#load boundaries of RLP#
-########################
+#load boundaries of RLP
 rlp_sf  <- st_read("Borders_RLP_shape/Landesgrenze_RLP.shp")
 crs(rlp_sf)
 plot(rlp_sf)
@@ -106,15 +95,20 @@ rlp_owin  <- as.owin(rlp_flat)
 Window(wts_ppp) <- rlp_owin
 plot(wts_ppp, cols=rgb(0,0,0,.2), pch=20)
 
+#calculate average nearest neighbor 
+mean(nndist(wts_ppp, k=1))
+#~587m -----> seems reasonable
 
 
+#THIS DOES NOT WORK SO FAR!!!!!!!!
+#calculate euclidean distance
+euclidDist <- sp::spDists(MaStR_Amprion_join_with_georeferences,longlat = FALSE)
+plot(euclidDist)
+hist(euclidDist)
 
-
-
-
-
-
-
+min <- apply(euclidDist, 1, function(x) min(x[x>0.1]))
+min <- min*1000
+plot(min)
 
 
 
